@@ -52,6 +52,16 @@ func helloWorld(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+
+fmt.Println("Header Data Start")	
+	for name, values := range r.Header {
+    // Loop over all values for the name.
+    for _, value := range values {
+        fmt.Println(name, value)
+    }
+}
+fmt.Println("Header Data End")	
+
 	switch r.Method {
 	case "GET":
 		tNow := time.Now()
