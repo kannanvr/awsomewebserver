@@ -8,8 +8,12 @@ import (
 	"os"
 	"strconv"
 	"time"
+
 )
 //var mux = sync.Mutex{}
+
+var flag503 bool
+var flagnoresp bool
 
 func GenerateData(value []string,timedata string) {
  var databytes int
@@ -45,6 +49,100 @@ func GenerateData(value []string,timedata string) {
 }
 
 
+
+func generate503(w http.ResponseWriter, r *http.Request) {
+
+fmt.Println("Header Data Start")
+        for name, values := range r.Header {
+    // Loop over all values for the name.
+    for _, value := range values {
+        fmt.Println(name, value)
+    }
+}
+fmt.Println("Header Data End")
+
+        switch r.Method {
+        case "GET":
+                for k, v := range r.URL.Query() {
+                        if k == "alt503" && v[0] == "true" && flag503 == true {
+                         				
+			 flag503 = false
+			     fmt.Println("200 sent")
+			     w.WriteHeader(http.StatusOK)
+                             w.Write([]byte("200 - Something good happened!"))
+                             return
+
+                        } else if k == "alt503" && v[0] == "true" {
+			 flag503 = true
+			     fmt.Println("503 sent")
+			     w.WriteHeader(http.StatusServiceUnavailable)
+                             w.Write([]byte("503 - Something bad happened!"))
+                             return
+			}
+                }
+			     w.WriteHeader(http.StatusServiceUnavailable)
+			     fmt.Println("503 sent")
+                             w.Write([]byte("503 - Something bad happened!"))
+        default:
+                w.WriteHeader(http.StatusNotImplemented)
+                w.Write([]byte(http.StatusText(http.StatusNotImplemented)))
+
+}
+
+
+}
+
+
+
+func noresp(w http.ResponseWriter, r *http.Request) {
+
+	
+fmt.Println("Header Data Start")
+        for name, values := range r.Header {
+    // Loop over all values for the name.
+    for _, value := range values {
+        fmt.Println(name, value)
+    }
+}
+fmt.Println("Header Data End")
+
+        switch r.Method {
+        case "GET":
+                for k, v := range r.URL.Query() {
+                        if k == "altempty" && v[0] == "true" && flagnoresp == true {
+                             flagnoresp = false
+                             fmt.Println("200 sent")
+                             w.WriteHeader(http.StatusOK)
+                             w.Write([]byte("200 - Something good happened!"))
+                             return
+			} else if  k == "altempty" && v[0] == "true" {
+                             flagnoresp = true
+
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			http.Error(w, "webserver doesn't support hijacking", http.StatusInternalServerError)
+			return
+		}
+		conn, _, err := hj.Hijack()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		r.Close = true
+		// Don't forget to close the connection:
+		conn.Close()
+		} else {
+
+		r.Close = true
+		}
+
+	     } 
+
+        default:
+                w.WriteHeader(http.StatusNotImplemented)
+                w.Write([]byte(http.StatusText(http.StatusNotImplemented)))
+}
+}
 
 func helloWorld(w http.ResponseWriter, r *http.Request) {
 	//mux.Lock()
@@ -113,6 +211,8 @@ fmt.Println("Header Data End")
 }
 func main() {
 	go http.HandleFunc("/", helloWorld)
+	go http.HandleFunc("/503", generate503)
+	go http.HandleFunc("/noresp", noresp)
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8000"
